@@ -277,6 +277,32 @@
         function setupRealtimeListeners() {
             const usersCollection = collection(db, 'artifacts', appId, 'public', 'data', 'users');
             const dossiersCollection = collection(db, 'artifacts', appId, 'public', 'data', 'dossiers');
+            const configDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config');
+
+            // Lắng nghe cấu hình Logo chung của hệ thống trên Cloud
+            onSnapshot(configDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const cloudLogo = data.customLogo || "";
+                    if (state.customLogo !== cloudLogo) {
+                        state.customLogo = cloudLogo;
+                        if (cloudLogo) {
+                            localStorage.setItem(`${appId}_custom_logo`, cloudLogo);
+                        } else {
+                            localStorage.removeItem(`${appId}_custom_logo`);
+                        }
+                        updateUI();
+                    }
+                } else {
+                    if (state.customLogo) {
+                        state.customLogo = "";
+                        localStorage.removeItem(`${appId}_custom_logo`);
+                        updateUI();
+                    }
+                }
+            }, (err) => {
+                console.error("Lỗi đồng bộ cấu hình Logo:", err);
+            });
 
             // Lắng nghe Users
             onSnapshot(usersCollection, (snapshot) => {
@@ -355,7 +381,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
-                img.onload = () => {
+                img.onload = async () => {
                     const canvas = document.createElement("canvas");
                     let width = img.width, height = img.height;
                     const maxDim = 350;
@@ -367,10 +393,23 @@
                     const ctx = canvas.getContext("2d");
                     ctx.drawImage(img, 0, 0, width, height);
                     const base64 = canvas.toDataURL("image/png");
+                    
                     state.customLogo = base64;
                     localStorage.setItem(`${appId}_custom_logo`, base64);
                     window.showToast("Tải Logo lên thành công!", "success");
                     updateUI();
+
+                    // Đồng bộ Logo tùy biến lên Firestore
+                    if (!isOfflineMode) {
+                        try {
+                            const configDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config');
+                            await setDoc(configDocRef, { customLogo: base64 }, { merge: true });
+                            window.showToast("Đã đồng bộ Logo mới tới toàn hệ thống!", "success");
+                        } catch (err) {
+                            console.error("Lỗi đồng bộ Logo lên Firebase:", err);
+                            window.showToast("Không thể đồng bộ Logo lên Cloud!", "error");
+                        }
+                    }
                 };
                 img.src = e.target.result;
             };
@@ -381,11 +420,22 @@
             if (event) event.stopPropagation();
             state.confirmTitle = "Xác nhận xóa Logo";
             state.confirmMessage = "Bạn có muốn xóa Logo tùy biến hiện hành để tải lên Logo mới?";
-            state.confirmCallback = () => {
+            state.confirmCallback = async () => {
                 state.customLogo = "";
                 localStorage.removeItem(`${appId}_custom_logo`);
                 window.showToast("Đã khôi phục thiết lập mặc định.", "info");
                 updateUI();
+
+                // Đồng bộ xóa cấu hình Logo trên Firestore
+                if (!isOfflineMode) {
+                    try {
+                        const configDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'config');
+                        await setDoc(configDocRef, { customLogo: "" }, { merge: true });
+                        window.showToast("Đã đồng bộ xóa Logo trên toàn hệ thống!", "success");
+                    } catch (err) {
+                        console.error("Lỗi đồng bộ xóa Logo trên Firebase:", err);
+                    }
+                }
             };
             state.showConfirmModal = true;
             updateUI();
@@ -928,7 +978,7 @@
         window.cancelAdminEdit = () => { state.adminUsername = ""; state.adminPassword = ""; state.adminName = ""; state.adminRole = ROLES.CB_QHKH; state.adminDept = "Phòng QHKH"; state.adminEditMode = false; updateUI(); };
 
         // ==========================================
-        // CÁC HÀM VẼ GIAO DIỆN (HTML RENDERERS)
+        // CÁC HÀM VÈ GIAO DIỆN (HTML RENDERERS)
         // ==========================================
         function updateUI() {
             recalculateSummaryMetrics();
