@@ -55,19 +55,12 @@
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            collection, 
-            onSnapshot, 
-            updateDoc, 
-            addDoc, 
-            deleteDoc
+            getFirestore, doc, setDoc, getDoc, collection, onSnapshot, 
+            updateDoc, addDoc, deleteDoc
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
-        // CẤU HÌNH FIREBASE THỰC TẾ CỦA BẠN (GẮN CỨNG)
+        // CẤU HÌNH FIREBASE THỰC TẾ CỦA BẠN
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDxnZzRtLzvB12Obq0ExelGjyqxsiyLgpo",
@@ -82,7 +75,6 @@
 
         let app, auth, db;
         let isOfflineMode = false;
-        let firebaseDiagnosticError = null; 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'credit-workflow-app';
 
         // Quy định vai trò cán bộ
@@ -94,12 +86,12 @@
             LD_PHTTD: "LĐ P.HTTD"
         };
 
-        // Quy trình 4 bước tối giản hóa
+        // Quy trình 4 bước
         const STAGES = [
-            { id: 1, name: "1. Khởi tạo hồ sơ", actorRole: "CB QHKH", description: "CB QHKH nhập thông tin hồ sơ và chọn LĐ P.KH giám sát cùng. Gửi đi sẽ tự động chuyển giao sang B2." },
-            { id: 2, name: "2. Tiếp nhận & Phản hồi", actorRole: "CB HTTD", description: "CB HTTD tiếp nhận đồng thời lập tờ trình kiểm soát thẩm định, đưa ý kiến đề xuất." },
-            { id: 3, name: "3. Phê duyệt LĐ HTTD", actorRole: "Lãnh đạo P.HTTD", description: "Lãnh đạo P.HTTD xem xét phê duyệt luân chuyển hoặc trả về yêu cầu sửa đổi." },
-            { id: 4, name: "4. Hoàn thiện / Bồi hoàn sau", actorRole: "CB HTTD", description: "CB QHKH đăng ký chứng từ nợ bồi hoàn. CB HTTD theo dõi bồi hoàn và bấm nút hoàn tất." }
+            { id: 1, name: "1. Khởi tạo hồ sơ", actorRole: "CB QHKH" },
+            { id: 2, name: "2. Tiếp nhận & Phản hồi", actorRole: "CB HTTD" },
+            { id: 3, name: "3. Phê duyệt LĐ HTTD", actorRole: "Lãnh đạo P.HTTD" },
+            { id: 4, name: "4. Hoàn thiện / Bồi hoàn sau", actorRole: "CB HTTD" }
         ];
 
         // Dữ liệu cán bộ mặc định
@@ -132,26 +124,8 @@
                 debts: [],
                 isDebting: false,
                 history: [
-                    {
-                        stageId: 1,
-                        stageName: "Khởi tạo hồ sơ",
-                        actor: "Nguyễn Văn An (CB QHKH)",
-                        action: "Đã khởi tạo và tự động gửi sang CB HTTD",
-                        startTime: "2026-06-25T08:30:00Z",
-                        endTime: "2026-06-25T08:30:00Z",
-                        duration: "0 phút",
-                        comment: "Khởi tạo hồ sơ vay hạn mức GHTD 5.5 Tỷ."
-                    },
-                    {
-                        stageId: 2,
-                        stageName: "2. Tiếp nhận & Phản hồi",
-                        actor: "Trần Thị Bình (CB HTTD)",
-                        action: "Đang xử lý",
-                        startTime: "2026-06-25T08:30:00Z",
-                        endTime: null,
-                        duration: null,
-                        comment: ""
-                    }
+                    { stageId: 1, stageName: "Khởi tạo hồ sơ", actor: "Nguyễn Văn An (CB QHKH)", action: "Đã khởi tạo và tự động gửi sang CB HTTD", startTime: "2026-06-25T08:30:00Z", endTime: "2026-06-25T08:30:00Z", duration: "0 phút", comment: "Khởi tạo hồ sơ vay hạn mức GHTD 5.5 Tỷ." },
+                    { stageId: 2, stageName: "2. Tiếp nhận & Phản hồi", actor: "Trần Thị Bình (CB HTTD)", action: "Đang xử lý", startTime: "2026-06-25T08:30:00Z", endTime: null, duration: null, comment: "" }
                 ]
             }
         ];
@@ -166,21 +140,12 @@
             filterStage: "ALL",
             searchTerm: "",
             customLogo: localStorage.getItem(`${appId}_custom_logo`) || "",
-            showCreateModal: false,
-            showActionModal: false,
-            showChangePasswordModal: false,
-            showResetPasswordModal: false, 
-            showConfirmModal: false,       
-            showZoomModal: false,          
-            pendingActionType: "",
-            actionComment: "",
-            temporaryAttachedImage: "",     
-            zoomImageUrl: "",              
-            resetTargetUsername: "",
-            newResetPassword: "",
-            confirmTitle: "",
-            confirmMessage: "",
-            confirmCallback: null
+            // Quản lý Modal
+            showCreateModal: false, showActionModal: false, showChangePasswordModal: false,
+            showResetPasswordModal: false, showConfirmModal: false, showZoomModal: false,
+            // Biến tạm
+            pendingActionType: "", actionComment: "", temporaryAttachedImage: "", zoomImageUrl: "",
+            resetTargetUsername: "", newResetPassword: "", confirmTitle: "", confirmMessage: "", confirmCallback: null
         };
 
         // UI Toast Helper
@@ -192,16 +157,9 @@
             
             let colorClass = "bg-blue-600 text-white border-blue-400";
             let icon = "ℹ️";
-            if (type === "success") {
-                colorClass = "bg-emerald-600 text-white border-emerald-400";
-                icon = "✅";
-            } else if (type === "error") {
-                colorClass = "bg-rose-600 text-white border-rose-400";
-                icon = "❌";
-            } else if (type === "warning") {
-                colorClass = "bg-amber-500 text-white border-amber-400";
-                icon = "⚠️";
-            }
+            if (type === "success") { colorClass = "bg-emerald-600 text-white border-emerald-400"; icon = "✅"; } 
+            else if (type === "error") { colorClass = "bg-rose-600 text-white border-rose-400"; icon = "❌"; } 
+            else if (type === "warning") { colorClass = "bg-amber-500 text-white border-amber-400"; icon = "⚠️"; }
 
             toast.innerHTML = `<span class="text-base">${icon}</span><span>${message}</span>`;
             toast.className += " " + colorClass;
@@ -217,11 +175,8 @@
         // KHỞI ĐỘNG KẾT NỐI HỆ THỐNG
         async function bootstrap() {
             const fallbackTimeout = setTimeout(() => {
-                if (state.dossiers.length === INITIAL_DOSSIERS.length && document.getElementById("app-loading")) {
-                    isOfflineMode = true;
-                    setupOfflineMode();
-                    window.showToast("Bảo trì: Đang chạy chế độ Offline Demo dự phòng!", "warning");
-                }
+                isOfflineMode = true; setupOfflineMode();
+                window.showToast("Bảo trì: Đang chạy chế độ Offline Demo dự phòng!", "warning");
             }, 3500);
 
             try {
@@ -240,24 +195,16 @@
             } catch (err) {
                 console.error("Firebase Connection Error:", err);
                 clearTimeout(fallbackTimeout);
-                firebaseDiagnosticError = err.code || err.message || err.toString();
-                isOfflineMode = true;
-                setupOfflineMode();
+                isOfflineMode = true; setupOfflineMode();
                 window.showToast("Đang chạy offline demo do lỗi kết nối Firebase!", "warning");
             }
         }
 
-        // THIẾT LẬP CHẾ ĐỘ OFFLINE TRONG RAM
         function setupOfflineMode() {
             const localUsers = localStorage.getItem(`${appId}_offline_users`);
             const localDossiers = localStorage.getItem(`${appId}_offline_dossiers`);
-
             if (localUsers) state.usersList = JSON.parse(localUsers);
             if (localDossiers) state.dossiers = JSON.parse(localDossiers);
-
-            const loadingEl = document.getElementById("app-loading");
-            if (loadingEl) loadingEl.remove();
-
             updateUI();
         }
 
@@ -267,12 +214,10 @@
             localStorage.setItem(`${appId}_offline_dossiers`, JSON.stringify(state.dossiers));
         }
 
-        // ĐỒNG BỘ FIRESTORE THỜI GIAN THỰC (ONLINE MODE)
         function setupRealtimeListeners() {
             const usersCollection = collection(db, 'artifacts', appId, 'public', 'data', 'users');
             const dossiersCollection = collection(db, 'artifacts', appId, 'public', 'data', 'dossiers');
 
-            // Lắng nghe Users
             onSnapshot(usersCollection, (snapshot) => {
                 const users = [];
                 snapshot.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
@@ -290,13 +235,8 @@
                     }
                 }
                 updateUI();
-            }, (err) => {
-                console.error("Lỗi đồng bộ Users:", err);
-                isOfflineMode = true;
-                setupOfflineMode();
-            });
+            }, (err) => { isOfflineMode = true; setupOfflineMode(); });
 
-            // Lắng nghe Hồ sơ
             onSnapshot(dossiersCollection, (snapshot) => {
                 const dossiersData = [];
                 snapshot.forEach(doc => {
@@ -308,39 +248,25 @@
                 state.dossiers = dossiersData;
 
                 if (state.selectedDossier) {
-                    const freshDossier = dossiersData.find(d => d.id === state.selectedDossier.id);
-                    state.selectedDossier = freshDossier || null;
+                    state.selectedDossier = dossiersData.find(d => d.id === state.selectedDossier.id) || null;
                 }
-
-                const loadingEl = document.getElementById("app-loading");
-                if (loadingEl) loadingEl.remove();
-
                 updateUI();
-            }, (err) => {
-                console.error("Lỗi đồng bộ Dossiers:", err);
-                isOfflineMode = true;
-                setupOfflineMode();
-            });
+            }, (err) => { isOfflineMode = true; setupOfflineMode(); });
         }
 
-        // Nạp dữ liệu mẫu lên database online
         async function seedDatabaseOnline() {
             try {
-                for (const u of INITIAL_USERS) {
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', u.username), u);
-                }
+                for (const u of INITIAL_USERS) { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', u.username), u); }
                 for (const d of INITIAL_DOSSIERS) {
                     const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'dossiers'), d);
                     await updateDoc(docRef, { id: docRef.id });
                 }
                 window.showToast("Khởi tạo bộ dữ liệu mẫu lên Cloud thành công!", "success");
-            } catch (err) {
-                console.error("Seed Online Error:", err);
-            }
+            } catch (err) { console.error("Seed Online Error:", err); }
         }
 
         // ==========================================
-        // CÁC HÀM XỬ LÝ NGHIỆP VỤ & SỰ KIỆN GIAO DIỆN
+        // CÁC HÀM XỬ LÝ NGHIỆP VỤ & DATA
         // ==========================================
 
         window.handleLogoUpload = (event) => {
@@ -376,26 +302,20 @@
             state.confirmTitle = "Xác nhận xóa Logo";
             state.confirmMessage = "Bạn có muốn xóa Logo tùy biến hiện hành để tải lên Logo mới?";
             state.confirmCallback = () => {
-                state.customLogo = "";
-                localStorage.removeItem(`${appId}_custom_logo`);
-                window.showToast("Đã khôi phục thiết lập mặc định.", "info");
-                updateUI();
+                state.customLogo = ""; localStorage.removeItem(`${appId}_custom_logo`);
+                window.showToast("Đã khôi phục thiết lập mặc định.", "info"); updateUI();
             };
-            state.showConfirmModal = true;
-            updateUI();
+            state.showConfirmModal = true; updateUI();
         };
 
-        // Đăng nhập ứng dụng
         window.handleAppLogin = (e) => {
             if (e) e.preventDefault();
             const uInput = document.getElementById("login-username").value.trim().toLowerCase();
             const pInput = document.getElementById("login-password").value;
 
-            let matchedUser = state.usersList.find(u => u.username.toLowerCase() === uInput && u.password === pInput);
-            
-            // FIX LỖI: Dự phòng trường hợp DB online bị thay đổi sai mật khẩu, vẫn cho phép đăng nhập bằng pass gốc
+            let matchedUser = state.usersList.find(u => u.username && u.username.toLowerCase() === uInput && u.password === pInput);
             if (!matchedUser) {
-                matchedUser = INITIAL_USERS.find(u => u.username.toLowerCase() === uInput && u.password === pInput);
+                matchedUser = INITIAL_USERS.find(u => u.username && u.username.toLowerCase() === uInput && u.password === pInput);
                 if(matchedUser) window.showToast("Đăng nhập bằng quyền khôi phục dự phòng!", "warning");
             }
 
@@ -406,8 +326,7 @@
                 updateUI();
             } else {
                 const errEl = document.getElementById("login-error");
-                errEl.innerText = "Tên đăng nhập hoặc mật khẩu không đúng.";
-                errEl.classList.remove("hidden");
+                if (errEl) { errEl.innerText = "Tên đăng nhập hoặc mật khẩu không đúng."; errEl.classList.remove("hidden"); }
             }
         };
 
@@ -425,21 +344,17 @@
 
         window.handleAppLogout = () => {
             localStorage.removeItem(`${appId}_logged_user`);
-            state.appUser = null;
-            state.selectedDossier = null;
-            state.activeTab = "list";
-            window.showToast("Đã đăng xuất khỏi hệ thống.", "info");
-            updateUI();
+            state.appUser = null; state.selectedDossier = null; state.activeTab = "list";
+            window.showToast("Đã đăng xuất khỏi hệ thống.", "info"); updateUI();
         };
 
         function getVisibleDossiers() {
             if (!state.appUser) return [];
-            const role = state.appUser.role;
-            const username = state.appUser.username;
+            const role = state.appUser.role; const username = state.appUser.username;
+            let list = Array.isArray(state.dossiers) ? state.dossiers : [];
 
-            let list = state.dossiers;
-            if (state.activeTab === "list") list = state.dossiers.filter(d => !d.isCompleted);
-            else if (state.activeTab === "history") list = state.dossiers.filter(d => d.isCompleted);
+            if (state.activeTab === "list") list = list.filter(d => !d.isCompleted);
+            else if (state.activeTab === "history") list = list.filter(d => d.isCompleted);
 
             if (role === ROLES.ADMIN || role === ROLES.CB_HTTD || role === ROLES.LD_PHTTD) return list;
             if (role === ROLES.CB_QHKH) return list.filter(d => d.creatorUsername === username);
@@ -455,17 +370,13 @@
 
         function getOverdueRemedies() {
             const overdueList = [];
-            state.dossiers.forEach(d => {
+            (state.dossiers || []).forEach(d => {
                 if (!d.isCompleted && d.currentStage === 4 && d.isDebting && d.debts) {
                     d.debts.forEach(debt => {
                         if (debt.status === "PENDING") {
                             const days = calculateOverdueDays(debt.commitmentDate);
                             if (days > 0) {
-                                overdueList.push({
-                                    dossierId: d.id, customerName: d.customerName,
-                                    docName: debt.docName, commitmentDate: debt.commitmentDate,
-                                    creatorName: d.creatorName, daysOverdue: days
-                                });
+                                overdueList.push({ dossierId: d.id, customerName: d.customerName, docName: debt.docName, commitmentDate: debt.commitmentDate, creatorName: d.creatorName, daysOverdue: days });
                             }
                         }
                     });
@@ -474,9 +385,7 @@
             return overdueList;
         }
 
-        function formatVND(value) {
-            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-        }
+        function formatVND(value) { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value); }
 
         window.handleImageUpload = (event) => {
             const file = event.target.files[0];
@@ -493,8 +402,7 @@
                         else { width = Math.round((width * maxDim) / height); height = maxDim; }
                     }
                     canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(img, 0, 0, width, height);
+                    const ctx = canvas.getContext("2d"); ctx.drawImage(img, 0, 0, width, height);
                     const base64 = canvas.toDataURL("image/jpeg", 0.65);
                     state.temporaryAttachedImage = base64;
                     const previewContainer = document.getElementById("image-upload-preview");
@@ -531,10 +439,7 @@
             const deptInput = document.getElementById("admin-dept").value.trim();
             const roleInput = document.getElementById("admin-role").value;
 
-            if (!usernameInput || !passwordInput || !nameInput) {
-                window.showToast("Vui lòng điền đủ các trường bắt buộc!", "error"); return;
-            }
-
+            if (!usernameInput || !passwordInput || !nameInput) { window.showToast("Vui lòng điền đủ các trường bắt buộc!", "error"); return; }
             const userData = { username: usernameInput, password: passwordInput, name: nameInput, role: roleInput, department: deptInput || "Phòng QHKH" };
 
             try {
@@ -544,16 +449,13 @@
                         if (state.usersList.some(u => u.username === usernameInput)) { window.showToast("Tên đăng nhập đã tồn tại!", "error"); return; }
                         state.usersList.push(userData);
                     }
-                    saveOfflineStateToStorage();
-                    window.showToast("Đã lưu thông tin cán bộ thành công", "success");
+                    saveOfflineStateToStorage(); window.showToast("Đã lưu thông tin cán bộ thành công", "success");
                 } else {
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', usernameInput), userData);
                     window.showToast("Đã cập nhật thông tin cán bộ lên Cloud!", "success");
                 }
                 cancelAdminEdit();
-            } catch (err) {
-                console.error(err); window.showToast("Không thể ghi nhận dữ liệu!", "error");
-            }
+            } catch (err) { console.error(err); window.showToast("Không thể ghi nhận dữ liệu!", "error"); }
         };
 
         window.handleEditUserClick = (username) => {
@@ -568,16 +470,11 @@
 
         window.handleDeleteUserClick = (username) => {
             if (username === "admin") { window.showToast("Không thể xóa tài khoản Admin tối cao!", "error"); return; }
-            state.confirmTitle = "Xác nhận xóa tài khoản";
-            state.confirmMessage = `Bạn chắc chắn muốn xóa tài khoản cán bộ "${username}" ra khỏi hệ thống?`;
+            state.confirmTitle = "Xác nhận xóa tài khoản"; state.confirmMessage = `Bạn chắc chắn muốn xóa tài khoản cán bộ "${username}" ra khỏi hệ thống?`;
             state.confirmCallback = async () => {
                 try {
-                    if (isOfflineMode) {
-                        state.usersList = state.usersList.filter(u => u.username !== username);
-                        saveOfflineStateToStorage();
-                    } else {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', username));
-                    }
+                    if (isOfflineMode) { state.usersList = state.usersList.filter(u => u.username !== username); saveOfflineStateToStorage(); } 
+                    else await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', username));
                     window.showToast("Xóa cán bộ thành công.", "success"); updateUI();
                 } catch (err) { console.error(err); }
             };
@@ -585,17 +482,11 @@
         };
 
         window.handleDeleteHistoryDossier = (dossierId) => {
-            state.confirmTitle = "Xác nhận xóa vĩnh viễn";
-            state.confirmMessage = "Cảnh báo: Bạn đang thực hiện xóa vĩnh viễn hồ sơ này khỏi hệ thống. Thao tác này KHÔNG THỂ KHÔI PHỤC!";
+            state.confirmTitle = "Xác nhận xóa vĩnh viễn"; state.confirmMessage = "Cảnh báo: Bạn đang thực hiện xóa vĩnh viễn hồ sơ này khỏi hệ thống. Thao tác này KHÔNG THỂ KHÔI PHỤC!";
             state.confirmCallback = async () => {
                 try {
-                    if (isOfflineMode) {
-                        state.dossiers = state.dossiers.filter(d => d.id !== dossierId);
-                        saveOfflineStateToStorage();
-                    } else {
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', dossierId);
-                        await deleteDoc(docRef);
-                    }
+                    if (isOfflineMode) { state.dossiers = state.dossiers.filter(d => d.id !== dossierId); saveOfflineStateToStorage(); } 
+                    else await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', dossierId));
                     state.selectedDossier = null; window.showToast("Đã xóa vĩnh viễn hồ sơ thành công!", "success"); updateUI();
                 } catch (err) { console.error(err); window.showToast("Không thể xóa hồ sơ!", "error"); }
             };
@@ -616,10 +507,7 @@
             const currentTimeStr = new Date().toISOString();
             const newId = "HS-" + Date.now().toString().substring(7);
             const tempDossier = {
-                id: newId, customerName: customerName, loanAmount: loanAmount, dossierType: dossierType, priority: priority,
-                currentStage: 2, isCompleted: false, createdAt: currentTimeStr, creatorUsername: state.appUser.username,
-                creatorName: state.appUser.name, ldkhFollower: ldkhFollower, assignedHTTD: "Chưa tiếp nhận",
-                slaLimitHours: 24, debts: [], isDebting: false,
+                id: newId, customerName: customerName, loanAmount: loanAmount, dossierType: dossierType, priority: priority, currentStage: 2, isCompleted: false, createdAt: currentTimeStr, creatorUsername: state.appUser.username, creatorName: state.appUser.name, ldkhFollower: ldkhFollower, assignedHTTD: "Chưa tiếp nhận", slaLimitHours: 24, debts: [], isDebting: false,
                 history: [
                     { stageId: 1, stageName: "Khởi tạo hồ sơ", actor: `${state.appUser.name} (CB QHKH)`, action: "Đã khởi tạo và tự động gửi sang CB HTTD", startTime: currentTimeStr, endTime: currentTimeStr, duration: "0 phút", comment: comment || "Tự động phân luồng sang Bước 2." },
                     { stageId: 2, stageName: "2. Tiếp nhận & Phản hồi", actor: "CB HTTD tiếp nhận", action: "Đang chờ xử lý", startTime: currentTimeStr, endTime: null, duration: null, comment: "" }
@@ -627,14 +515,9 @@
             };
 
             try {
-                if (isOfflineMode) {
-                    state.dossiers.unshift(tempDossier); saveOfflineStateToStorage();
-                } else {
-                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'dossiers'), tempDossier);
-                    await updateDoc(docRef, { id: docRef.id });
-                }
-                window.showToast("Khởi tạo và đồng bộ Cloud thành công!", "success");
-                state.showCreateModal = false; updateUI();
+                if (isOfflineMode) { state.dossiers.unshift(tempDossier); saveOfflineStateToStorage(); } 
+                else { const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'dossiers'), tempDossier); await updateDoc(docRef, { id: docRef.id }); }
+                window.showToast("Khởi tạo và đồng bộ Cloud thành công!", "success"); state.showCreateModal = false; updateUI();
             } catch (err) { console.error(err); window.showToast("Lỗi trong quá trình khởi tạo hồ sơ!", "error"); }
         };
 
@@ -642,14 +525,9 @@
             const checked = e.target.checked;
             try {
                 if (isOfflineMode) {
-                    state.selectedDossier.isDebting = checked;
-                    state.selectedDossier.debts = checked ? (state.selectedDossier.debts || []) : [];
-                    state.dossiers = state.dossiers.map(d => d.id === state.selectedDossier.id ? state.selectedDossier : d);
-                    saveOfflineStateToStorage();
-                } else {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', state.selectedDossier.id);
-                    await updateDoc(docRef, { isDebting: checked, debts: checked ? (state.selectedDossier.debts || []) : [] });
-                }
+                    state.selectedDossier.isDebting = checked; state.selectedDossier.debts = checked ? (state.selectedDossier.debts || []) : [];
+                    state.dossiers = state.dossiers.map(d => d.id === state.selectedDossier.id ? state.selectedDossier : d); saveOfflineStateToStorage();
+                } else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', state.selectedDossier.id), { isDebting: checked, debts: checked ? (state.selectedDossier.debts || []) : [] });
                 window.showToast(checked ? "Kích hoạt danh mục nợ bồi hoàn!" : "Hủy đăng ký nợ.", "info"); updateUI();
             } catch (err) { console.error(err); }
         };
@@ -659,58 +537,42 @@
             const docName = document.getElementById("new-debt-name").value.trim();
             const commitmentDate = document.getElementById("new-debt-date").value;
             if (!docName || !commitmentDate) { window.showToast("Vui lòng nhập Tên chứng từ và Ngày cam kết!", "error"); return; }
-
             const newDebt = { id: "debt_" + Date.now(), docName: docName, commitmentDate: commitmentDate, status: "PENDING" };
             const updatedDebts = [...(state.selectedDossier.debts || []), newDebt];
 
             try {
                 if (isOfflineMode) {
                     state.selectedDossier.debts = updatedDebts;
-                    state.dossiers = state.dossiers.map(d => d.id === state.selectedDossier.id ? state.selectedDossier : d);
-                    saveOfflineStateToStorage();
-                } else {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', state.selectedDossier.id);
-                    await updateDoc(docRef, { debts: updatedDebts });
-                }
+                    state.dossiers = state.dossiers.map(d => d.id === state.selectedDossier.id ? state.selectedDossier : d); saveOfflineStateToStorage();
+                } else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', state.selectedDossier.id), { debts: updatedDebts });
                 window.showToast("Đã bổ sung chứng từ nợ bồi hoàn!", "success"); updateUI();
             } catch (err) { console.error(err); }
         };
 
         window.handleToggleDebtStatus = async (debtId) => {
             if (state.appUser.role !== ROLES.CB_HTTD) { window.showToast("Chỉ cán bộ HTTD mới được cập nhật bồi hoàn!", "error"); return; }
-
             const updatedDebts = state.selectedDossier.debts.map(d => d.id === debtId ? { ...d, status: d.status === "PENDING" ? "COMPLETED" : "PENDING" } : d);
             const allDebtsRecovered = updatedDebts.every(d => d.status === "COMPLETED");
-            let autoArchive = false;
-            let finalHistory = [...state.selectedDossier.history];
+            let autoArchive = false; let finalHistory = [...state.selectedDossier.history];
 
             if (allDebtsRecovered && updatedDebts.length > 0) {
-                autoArchive = true;
-                const currentTimeStr = new Date().toISOString();
-                const lastIdx = finalHistory.length - 1;
-                const lastLog = { ...finalHistory[lastIdx] };
-                lastLog.endTime = currentTimeStr;
-                const diffMs = new Date(currentTimeStr) - new Date(lastLog.startTime);
-                const minutes = Math.floor((diffMs / 1000) / 60);
+                autoArchive = true; const currentTimeStr = new Date().toISOString(); const lastIdx = finalHistory.length - 1;
+                const lastLog = { ...finalHistory[lastIdx] }; lastLog.endTime = currentTimeStr;
+                const diffMs = new Date(currentTimeStr) - new Date(lastLog.startTime); const minutes = Math.floor((diffMs / 1000) / 60);
                 lastLog.duration = Math.floor(minutes / 60) > 0 ? `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút` : `${minutes % 60} phút`;
-                lastLog.action = "Hệ thống tự động hoàn tất - Đã bồi hoàn toàn bộ";
-                lastLog.comment = "Tất cả danh mục chứng từ bồi hoàn đã được nộp đầy đủ.";
-                finalHistory[lastIdx] = lastLog;
-                window.showToast("Tất cả chứng từ nợ đã được thu hồi! Hồ sơ tự động hoàn tất và lưu Lịch sử.", "success");
+                lastLog.action = "Hệ thống tự động hoàn tất - Đã bồi hoàn toàn bộ"; lastLog.comment = "Tất cả danh mục chứng từ bồi hoàn đã được nộp đầy đủ.";
+                finalHistory[lastIdx] = lastLog; window.showToast("Tất cả chứng từ nợ đã được thu hồi! Hồ sơ tự động hoàn tất và lưu Lịch sử.", "success");
             }
 
             try {
                 if (isOfflineMode) {
                     state.selectedDossier.debts = updatedDebts;
                     if (autoArchive) { state.selectedDossier.isCompleted = true; state.selectedDossier.history = finalHistory; state.selectedDossier = null; }
-                    state.dossiers = state.dossiers.map(d => d.id === state.selectedDossier?.id || d.id === debtId ? state.selectedDossier || d : d);
-                    saveOfflineStateToStorage();
+                    state.dossiers = state.dossiers.map(d => d.id === state.selectedDossier?.id || d.id === debtId ? state.selectedDossier || d : d); saveOfflineStateToStorage();
                 } else {
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', state.selectedDossier.id);
-                    if (autoArchive) {
-                        await updateDoc(docRef, { debts: updatedDebts, isCompleted: true, history: finalHistory });
-                        state.selectedDossier = null;
-                    } else await updateDoc(docRef, { debts: updatedDebts });
+                    if (autoArchive) { await updateDoc(docRef, { debts: updatedDebts, isCompleted: true, history: finalHistory }); state.selectedDossier = null; } 
+                    else await updateDoc(docRef, { debts: updatedDebts });
                 }
                 updateUI();
             } catch (err) { console.error(err); }
@@ -720,35 +582,21 @@
             const updatedDebts = state.selectedDossier.debts.filter(d => d.id !== debtId);
             try {
                 if (isOfflineMode) {
-                    state.selectedDossier.debts = updatedDebts;
-                    state.dossiers = state.dossiers.map(d => d.id === state.selectedDossier.id ? state.selectedDossier : d);
-                    saveOfflineStateToStorage();
-                } else {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', state.selectedDossier.id);
-                    await updateDoc(docRef, { debts: updatedDebts });
-                }
+                    state.selectedDossier.debts = updatedDebts; state.dossiers = state.dossiers.map(d => d.id === state.selectedDossier.id ? state.selectedDossier : d); saveOfflineStateToStorage();
+                } else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', state.selectedDossier.id), { debts: updatedDebts });
                 window.showToast("Đã xóa chứng từ nợ.", "info"); updateUI();
             } catch (err) { console.error(err); }
         };
 
         window.confirmTransition = async () => {
-            const dossierId = state.selectedDossier.id;
-            const targetDossier = state.dossiers.find(d => d.id === dossierId);
+            const dossierId = state.selectedDossier.id; const targetDossier = state.dossiers.find(d => d.id === dossierId);
             if (!targetDossier) return;
 
-            const currentStageId = targetDossier.currentStage;
-            const currentTimeStr = new Date().toISOString();
-            let updatedHistory = [...targetDossier.history];
-            let nextStage = currentStageId;
-            let assignedActor = targetDossier.assignedHTTD;
-            let isDossierNowCompleted = false;
+            const currentStageId = targetDossier.currentStage; const currentTimeStr = new Date().toISOString();
+            let updatedHistory = [...targetDossier.history]; let nextStage = currentStageId; let assignedActor = targetDossier.assignedHTTD; let isDossierNowCompleted = false;
 
-            const currentStepIndex = updatedHistory.length - 1;
-            const currentStep = { ...updatedHistory[currentStepIndex] };
-            currentStep.endTime = currentTimeStr;
-
-            const diffMs = new Date(currentTimeStr) - new Date(currentStep.startTime);
-            const minutes = Math.floor((diffMs / 1000) / 60);
+            const currentStepIndex = updatedHistory.length - 1; const currentStep = { ...updatedHistory[currentStepIndex] }; currentStep.endTime = currentTimeStr;
+            const diffMs = new Date(currentTimeStr) - new Date(currentStep.startTime); const minutes = Math.floor((diffMs / 1000) / 60);
             currentStep.duration = Math.floor(minutes / 60) > 0 ? `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút` : `${minutes % 60} phút`;
             
             const finalComment = state.actionComment.trim() ? state.actionComment.trim() : "Không có ý kiến";
@@ -764,123 +612,99 @@
                     const httdHasComment = httdStepLog && (httdStepLog.comment !== "Không có ý kiến" && httdStepLog.comment !== "") || (httdStepLog && httdStepLog.attachedImage);
 
                     if (!ldHasComment && !httdHasComment) {
-                        isDossierNowCompleted = true;
-                        updatedHistory.push({ stageId: 4, stageName: "4. Hoàn thiện / Bồi hoàn sau", actor: `${targetDossier.creatorName} (CB QHKH)`, action: "Hệ thống tự động hoàn tất - Đóng hồ sơ", startTime: currentTimeStr, endTime: currentTimeStr, duration: "0 phút", comment: "Hệ thống tự động Hoàn Tất do không phát sinh ý kiến bổ sung." });
-                        window.showToast("Không phát sinh ý kiến. Hồ sơ tự động hoàn tất!", "success");
+                        isDossierNowCompleted = true; updatedHistory.push({ stageId: 4, stageName: "4. Hoàn thiện / Bồi hoàn sau", actor: `${targetDossier.creatorName} (CB QHKH)`, action: "Hệ thống tự động hoàn tất - Đóng hồ sơ", startTime: currentTimeStr, endTime: currentTimeStr, duration: "0 phút", comment: "Hệ thống tự động Hoàn Tất do không phát sinh ý kiến bổ sung." }); window.showToast("Không phát sinh ý kiến. Hồ sơ tự động hoàn tất!", "success");
                     } else {
-                        nextStage = 4;
-                        updatedHistory.push({ stageId: 4, stageName: "4. Hoàn thiện / Bồi hoàn sau", actor: `${targetDossier.creatorName} (CB QHKH)`, action: "Chờ lập danh sách bồi hoàn hồ sơ", startTime: currentTimeStr, endTime: null, duration: null, comment: `Cần bồi hoàn theo ý kiến. Ý kiến LĐ HTTD: "${finalComment}". Ý kiến CB HTTD: "${httdStepLog?.comment || 'Không'}"` });
-                        window.showToast("Đã chuyển sang Bước 4 (Bồi hoàn)!", "warning");
+                        nextStage = 4; updatedHistory.push({ stageId: 4, stageName: "4. Hoàn thiện / Bồi hoàn sau", actor: `${targetDossier.creatorName} (CB QHKH)`, action: "Chờ lập danh sách bồi hoàn hồ sơ", startTime: currentTimeStr, endTime: null, duration: null, comment: `Cần bồi hoàn theo ý kiến. Ý kiến LĐ HTTD: "${finalComment}". Ý kiến CB HTTD: "${httdStepLog?.comment || 'Không'}"` }); window.showToast("Đã chuyển sang Bước 4 (Bồi hoàn)!", "warning");
                     }
                 } else if (currentStageId < 3) {
-                    nextStage = currentStageId + 1;
-                    let nextActor = "", actionDesc = "";
+                    nextStage = currentStageId + 1; let nextActor = "", actionDesc = "";
                     if (nextStage === 2) { nextActor = "CB HTTD tiếp nhận"; assignedActor = `${state.appUser.name} (CB HTTD)`; actionDesc = "Đang thẩm định & lập tờ trình"; } 
                     else if (nextStage === 3) { nextActor = "Ban Lãnh Đạo P.HTTD"; actionDesc = "Chờ ý kiến phê duyệt cuối cùng"; }
-                    updatedHistory.push({ stageId: nextStage, stageName: STAGES.find(s => s.id === nextStage).name, actor: nextActor, action: actionDesc, startTime: currentTimeStr, endTime: null, duration: null, comment: "" });
-                    window.showToast("Bàn giao chuyển bước thành công!", "success");
+                    updatedHistory.push({ stageId: nextStage, stageName: STAGES.find(s => s.id === nextStage).name, actor: nextActor, action: actionDesc, startTime: currentTimeStr, endTime: null, duration: null, comment: "" }); window.showToast("Bàn giao chuyển bước thành công!", "success");
                 }
             } else if (state.pendingActionType === "RETURN") {
                 if (currentStageId > 1) {
-                    nextStage = currentStageId - 1;
-                    let prevActor = "";
-                    if (nextStage === 1) prevActor = `${targetDossier.creatorName} (CB QHKH)`;
-                    else if (nextStage === 2) prevActor = targetDossier.assignedHTTD;
-                    updatedHistory.push({ stageId: nextStage, stageName: STAGES.find(s => s.id === nextStage).name + " (Yêu cầu làm lại)", actor: prevActor, action: "Yêu cầu chỉnh sửa bổ sung thông tin", startTime: currentTimeStr, endTime: null, duration: null, comment: `Lý do trả lại: ${finalComment}` });
-                    window.showToast("Hồ sơ đã được trả về.", "info");
+                    nextStage = currentStageId - 1; let prevActor = "";
+                    if (nextStage === 1) prevActor = `${targetDossier.creatorName} (CB QHKH)`; else if (nextStage === 2) prevActor = targetDossier.assignedHTTD;
+                    updatedHistory.push({ stageId: nextStage, stageName: STAGES.find(s => s.id === nextStage).name + " (Yêu cầu làm lại)", actor: prevActor, action: "Yêu cầu chỉnh sửa bổ sung thông tin", startTime: currentTimeStr, endTime: null, duration: null, comment: `Lý do trả lại: ${finalComment}` }); window.showToast("Hồ sơ đã được trả về.", "info");
                 }
             } else if (state.pendingActionType === "COMPLETE") {
-                isDossierNowCompleted = true;
-                const fullyClearedDebts = (targetDossier.debts || []).map(debt => ({ ...debt, status: "COMPLETED" }));
-                currentStep.action = "CB HTTD phê duyệt đóng bồi hoàn - Đã nộp đủ chứng từ gốc";
-                currentStep.comment = finalComment;
-                updatedHistory[currentStepIndex] = currentStep;
-                try {
-                    if (isOfflineMode) state.selectedDossier.debts = fullyClearedDebts;
-                    else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', dossierId), { debts: fullyClearedDebts });
-                } catch(e) { console.error(e); }
+                isDossierNowCompleted = true; const fullyClearedDebts = (targetDossier.debts || []).map(debt => ({ ...debt, status: "COMPLETED" }));
+                currentStep.action = "CB HTTD phê duyệt đóng bồi hoàn - Đã nộp đủ chứng từ gốc"; currentStep.comment = finalComment; updatedHistory[currentStepIndex] = currentStep;
+                try { if (isOfflineMode) state.selectedDossier.debts = fullyClearedDebts; else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', dossierId), { debts: fullyClearedDebts }); } catch(e) {}
                 window.showToast("Bồi hoàn hoàn tất! Đã đưa hồ sơ vào Tab Lịch sử.", "success");
             }
 
             try {
                 if (isOfflineMode) {
-                    state.selectedDossier.currentStage = nextStage; state.selectedDossier.assignedHTTD = assignedActor;
-                    state.selectedDossier.history = updatedHistory; state.selectedDossier.isCompleted = isDossierNowCompleted;
-                    state.dossiers = state.dossiers.map(d => d.id === dossierId ? state.selectedDossier : d);
-                    saveOfflineStateToStorage();
-                } else {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', dossierId);
-                    await updateDoc(docRef, { currentStage: nextStage, assignedHTTD: assignedActor, history: updatedHistory, isCompleted: isDossierNowCompleted });
-                }
-                state.temporaryAttachedImage = ""; state.showActionModal = false; state.actionComment = ""; state.selectedDossier = null;
-                updateUI();
+                    state.selectedDossier.currentStage = nextStage; state.selectedDossier.assignedHTTD = assignedActor; state.selectedDossier.history = updatedHistory; state.selectedDossier.isCompleted = isDossierNowCompleted;
+                    state.dossiers = state.dossiers.map(d => d.id === dossierId ? state.selectedDossier : d); saveOfflineStateToStorage();
+                } else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'dossiers', dossierId), { currentStage: nextStage, assignedHTTD: assignedActor, history: updatedHistory, isCompleted: isDossierNowCompleted });
+                state.temporaryAttachedImage = ""; state.showActionModal = false; state.actionComment = ""; state.selectedDossier = null; updateUI();
             } catch (err) { console.error(err); window.showToast("Lỗi cập nhật Firestore!", "error"); }
-        };
-
-        window.openActionModal = (type) => {
-            const commentVal = document.getElementById("action-comment-input")?.value || "";
-            if (type === "RETURN" && !commentVal.trim()) { window.showToast("Vui lòng ghi rõ lý do trả hồ sơ!", "error"); return; }
-            state.actionComment = commentVal; state.pendingActionType = type; state.showActionModal = true; updateUI();
         };
 
         window.handleChangePasswordSubmit = async (e) => {
             e.preventDefault();
-            const curPass = document.getElementById("pw-current").value;
-            const newPass = document.getElementById("pw-new").value;
-            const confirmPass = document.getElementById("pw-confirm").value;
-
+            const curPass = document.getElementById("pw-current").value; const newPass = document.getElementById("pw-new").value; const confirmPass = document.getElementById("pw-confirm").value;
             if (curPass !== state.appUser.password) { window.showToast("Mật khẩu hiện tại không khớp!", "error"); return; }
             if (newPass.length < 3) { window.showToast("Mật khẩu mới tối thiểu 3 ký tự!", "error"); return; }
             if (newPass !== confirmPass) { window.showToast("Mật khẩu xác nhận không khớp!", "error"); return; }
 
             try {
                 if (isOfflineMode) {
-                    state.appUser.password = newPass;
-                    state.usersList = state.usersList.map(u => u.username === state.appUser.username ? { ...u, password: newPass } : u);
-                    saveOfflineStateToStorage();
-                } else {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', state.appUser.username), { password: newPass });
-                }
+                    state.appUser.password = newPass; state.usersList = state.usersList.map(u => u.username === state.appUser.username ? { ...u, password: newPass } : u); saveOfflineStateToStorage();
+                } else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', state.appUser.username), { password: newPass });
                 state.appUser.password = newPass; localStorage.setItem(`${appId}_logged_user`, JSON.stringify(state.appUser));
                 state.showChangePasswordModal = false; window.showToast("Đổi mật khẩu bảo mật thành công!", "success"); updateUI();
             } catch (err) { console.error(err); }
         };
 
-        window.openResetPasswordModal = (username) => { state.resetTargetUsername = username; state.newResetPassword = ""; state.showResetPasswordModal = true; updateUI(); };
-
         window.handleAdminResetPasswordSubmit = async (e) => {
             e.preventDefault();
-            const targetUsername = state.resetTargetUsername;
-            const newPassVal = document.getElementById("admin-new-reset-password").value.trim();
+            const targetUsername = state.resetTargetUsername; const newPassVal = document.getElementById("admin-new-reset-password").value.trim();
             if (newPassVal.length < 3) { window.showToast("Mật khẩu mới tối thiểu 3 ký tự!", "error"); return; }
-
             try {
-                if (isOfflineMode) {
-                    state.usersList = state.usersList.map(u => u.username === targetUsername ? { ...u, password: newPassVal } : u);
-                    saveOfflineStateToStorage();
-                } else {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', targetUsername), { password: newPassVal });
-                }
+                if (isOfflineMode) { state.usersList = state.usersList.map(u => u.username === targetUsername ? { ...u, password: newPassVal } : u); saveOfflineStateToStorage(); } 
+                else await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', targetUsername), { password: newPassVal });
                 state.showResetPasswordModal = false; window.showToast(`Reset mật khẩu cho "${targetUsername}" thành công!`, "success"); updateUI();
             } catch (err) { console.error(err); }
         };
 
+        // ==========================================
+        // CÁC HÀM TOGGLE MODAL & CHUYỂN TAB 
+        // (Đây là phần code bị thiếu khiến click không mở Popup)
+        // ==========================================
         window.changeTab = (tabName) => { state.activeTab = tabName; state.selectedDossier = null; updateUI(); };
+        window.selectDossier = (dossierId) => {
+            const matched = state.dossiers.find(d => d.id === dossierId);
+            if (matched) { state.selectedDossier = matched; state.actionComment = ""; updateUI(); }
+        };
+        window.closeDossierDetail = () => { state.selectedDossier = null; updateUI(); };
+        window.openCreateModal = () => { state.showCreateModal = true; updateUI(); };
+        window.closeCreateModal = () => { state.showCreateModal = false; updateUI(); };
+        window.openActionModal = (type) => {
+            const commentVal = document.getElementById("action-comment-input")?.value || "";
+            if (type === "RETURN" && !commentVal.trim()) { window.showToast("Vui lòng ghi rõ lý do trả hồ sơ!", "error"); return; }
+            state.actionComment = commentVal; state.pendingActionType = type; state.showActionModal = true; updateUI();
+        };
+        window.closeActionModal = () => { state.showActionModal = false; updateUI(); };
+        window.openChangePasswordModal = () => { state.showChangePasswordModal = true; updateUI(); };
+        window.closeChangePasswordModal = () => { state.showChangePasswordModal = false; updateUI(); };
+        window.openResetPasswordModal = (username) => { state.resetTargetUsername = username; state.newResetPassword = ""; state.showResetPasswordModal = true; updateUI(); };
+        window.closeResetPasswordModal = () => { state.showResetPasswordModal = false; updateUI(); };
         window.cancelAdminEdit = () => { state.adminUsername = ""; state.adminPassword = ""; state.adminName = ""; state.adminRole = ROLES.CB_QHKH; state.adminDept = "Phòng QHKH"; state.adminEditMode = false; updateUI(); };
 
         // ==========================================
-        // CÁC HÀM VẼ GIAO DIỆN (HTML RENDERERS)
+        // HÀM VẼ GIAO DIỆN (UPDATE UI)
         // ==========================================
         function updateUI() {
-            recalculateSummaryMetrics();
             const appContainer = document.getElementById("app");
             if (!appContainer) return;
 
             // 1. CHƯA ĐĂNG NHẬP
             if (!state.appUser) {
-                // FIX CHÍNH: Ngăn không cho re-render lại form khi có data mới từ Firebase, tránh xóa input của user
-                if (document.getElementById("login-form")) return; 
-
+                if (document.getElementById("login-form")) return; // Tránh re-render form
                 appContainer.innerHTML = `
                     <div class="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
                         <div class="sm:mx-auto sm:w-full sm:max-w-md">
@@ -888,7 +712,7 @@
                                 ${state.customLogo ? `
                                     <div class="relative group bg-white p-3.5 rounded-3xl shadow-2xl flex items-center justify-center transition-all">
                                         <img src="${state.customLogo}" class="max-h-24 max-w-[220px] object-contain rounded-xl mx-auto" />
-                                        <button onclick="clearCustomLogo(event)" class="absolute -top-2 -right-2 bg-rose-600 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-md hover:bg-rose-700 transition-colors" title="Bấm vào để xóa Logo tùy biến">✕</button>
+                                        <button onclick="clearCustomLogo(event)" class="absolute -top-2 -right-2 bg-rose-600 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-md hover:bg-rose-700 transition-colors" title="Bấm để xóa Logo">✕</button>
                                     </div>
                                 ` : `
                                     <div class="flex flex-col items-center justify-center border-2 border-dashed border-indigo-400/60 rounded-3xl p-6 bg-slate-800/80 hover:border-indigo-400 transition-all cursor-pointer relative shadow-xl w-60 h-28" onclick="document.getElementById('logo-upload-input').click()">
@@ -901,36 +725,27 @@
                             <h2 class="mt-6 text-center text-3xl font-extrabold text-white tracking-tight">LUỒNG HỒ SƠ TÍN DỤNG</h2>
                             <p class="mt-2 text-center text-sm text-indigo-300">Giám sát xử lý, nợ bồi hoàn & đo lường thời gian thực</p>
                         </div>
-
                         <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
                             <div class="bg-slate-800 py-8 px-4 shadow-2xl rounded-2xl sm:px-10 border border-slate-700">
-                                <!-- FIX CHÍNH: Sử dụng onsubmit nội tuyến để đảm bảo 100% bắt được event -->
                                 <form class="space-y-6" id="login-form" onsubmit="window.handleAppLogin(event)">
                                     <div>
                                         <label class="block text-sm font-semibold text-slate-300">Tên đăng nhập</label>
-                                        <div class="mt-1">
-                                            <input id="login-username" type="text" required placeholder="Nhập tên tài khoản..." class="appearance-none block w-full px-3 py-2.5 border border-slate-600 rounded-lg bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all">
-                                        </div>
+                                        <div class="mt-1"><input id="login-username" type="text" required placeholder="Nhập tên tài khoản..." class="appearance-none block w-full px-3 py-2.5 border border-slate-600 rounded-lg bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"></div>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-semibold text-slate-300">Mật khẩu</label>
-                                        <div class="mt-1">
-                                            <input id="login-password" type="password" required placeholder="••••••••" class="appearance-none block w-full px-3 py-2.5 border border-slate-600 rounded-lg bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all">
-                                        </div>
+                                        <div class="mt-1"><input id="login-password" type="password" required placeholder="••••••••" class="appearance-none block w-full px-3 py-2.5 border border-slate-600 rounded-lg bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"></div>
                                     </div>
                                     <div id="login-error" class="hidden bg-rose-900/40 border border-rose-500 text-red-200 p-3 rounded-lg text-xs font-semibold"></div>
-                                    <div>
-                                        <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">Xác Nhận Đăng Nhập</button>
-                                    </div>
+                                    <div><button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all">Xác Nhận Đăng Nhập</button></div>
                                 </form>
-
                                 <div class="mt-8 pt-6 border-t border-slate-700">
-                                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 text-center">👉 Đăng nhập nhanh tài khoản cán bộ để trải nghiệm</span>
+                                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 text-center">👉 Đăng nhập nhanh tài khoản cán bộ</span>
                                     <div class="grid grid-cols-2 gap-2 text-xs">
-                                        <button type="button" onclick="handleQuickLogin('qhkh_an')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded border border-slate-600 text-left transition-all">💼 <strong>qhkh_an</strong> (QHKH - Tạo B1)</button>
-                                        <button type="button" onclick="handleQuickLogin('httd_binh')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded border border-slate-600 text-left transition-all">⚙️ <strong>httd_binh</strong> (HTTD - Đề xuất B2)</button>
-                                        <button type="button" onclick="handleQuickLogin('ldhttd_quoc')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded border border-slate-600 text-left transition-all">⚡ <strong>ldhttd_quoc</strong> (LĐ HTTD - Duyệt B3)</button>
-                                        <button type="button" onclick="handleQuickLogin('admin')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded border border-slate-600 text-left transition-all">👑 <strong>admin</strong> (Toàn quyền)</button>
+                                        <button type="button" onclick="handleQuickLogin('qhkh_an')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded border border-slate-600 text-left">💼 <strong>qhkh_an</strong> (QHKH - Tạo B1)</button>
+                                        <button type="button" onclick="handleQuickLogin('httd_binh')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded border border-slate-600 text-left">⚙️ <strong>httd_binh</strong> (HTTD - Đề xuất B2)</button>
+                                        <button type="button" onclick="handleQuickLogin('ldhttd_quoc')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded border border-slate-600 text-left">⚡ <strong>ldhttd_quoc</strong> (LĐ HTTD - Duyệt B3)</button>
+                                        <button type="button" onclick="handleQuickLogin('admin')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded border border-slate-600 text-left">👑 <strong>admin</strong> (Toàn quyền)</button>
                                     </div>
                                 </div>
                             </div>
@@ -940,7 +755,7 @@
                 return;
             }
 
-            // 2. MÀN HÌNH ĐÃ ĐĂNG NHẬP THÀNH CÔNG
+            // 2. MÀN HÌNH ĐÃ ĐĂNG NHẬP
             const visibleDossiersData = getVisibleDossiers();
             const overdueList = getOverdueRemedies();
             const urgentDossiersForHTTD = visibleDossiersData.filter(d => d.priority === "URGENT" && d.currentStage === 2);
@@ -959,7 +774,7 @@
                             ${state.customLogo ? `
                                 <div class="relative group bg-white/95 p-1 rounded-2xl flex items-center justify-center shadow-md">
                                     <img src="${state.customLogo}" class="h-12 max-w-[150px] object-contain rounded-xl" />
-                                    <button onclick="clearCustomLogo(event)" class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[8px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow opacity-0 group-hover:opacity-100 transition-opacity" title="Bấm vào để xóa Logo tùy biến">✕</button>
+                                    <button onclick="clearCustomLogo(event)" class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[8px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                                 </div>
                             ` : `
                                 <div class="flex flex-col items-center justify-center border border-dashed border-indigo-400/50 rounded-2xl p-1 bg-indigo-950/50 hover:border-indigo-400 transition-all cursor-pointer relative w-20 h-12 text-center" onclick="document.getElementById('header-logo-upload-input').click()">
@@ -972,7 +787,6 @@
                                 <p class="text-xs text-indigo-200">Giao dịch Cloud real-time - Khởi tạo trực tiếp Bước 2</p>
                             </div>
                         </div>
-
                         <div class="flex items-center gap-4 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700">
                             <div class="text-right">
                                 <span class="block text-xs text-indigo-300 font-semibold uppercase">${state.appUser.role}</span>
@@ -1019,7 +833,7 @@
                 <!-- Main Content -->
                 <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 font-sans">
                     
-                    <!-- TAB 1 & 2: LUỒNG HỒ SƠ CHƯA HOÀN THÀNH HOẶC LỊCH SỬ ĐÃ HOÀN THÀNH -->
+                    <!-- TAB 1 & 2: LUỒNG HỒ SƠ -->
                     <div id="tab-list" class="${state.activeTab === 'list' || state.activeTab === 'history' ? '' : 'hidden'}">
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
                             <div class="relative w-full md:w-96">
@@ -1030,29 +844,24 @@
                                 <div>
                                     <select id="filter-stage-select" class="border border-slate-300 rounded-lg py-1.5 px-3 text-xs font-bold focus:ring-2 focus:ring-indigo-500">
                                         <option value="ALL">Tất cả giai đoạn</option>
-                                        <option value="2">2. Tiếp nhận & Phản hồi (HTTD)</option>
-                                        <option value="3">3. Phê duyệt LĐ HTTD</option>
-                                        <option value="4">4. Hoàn thiện / Bồi hoàn sau</option>
+                                        <option value="2" ${state.filterStage === "2" ? "selected" : ""}>2. Tiếp nhận & Phản hồi (HTTD)</option>
+                                        <option value="3" ${state.filterStage === "3" ? "selected" : ""}>3. Phê duyệt LĐ HTTD</option>
+                                        <option value="4" ${state.filterStage === "4" ? "selected" : ""}>4. Hoàn thiện / Bồi hoàn sau</option>
                                     </select>
                                 </div>
                             ` : ''}
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <!-- Left List -->
-                            <div class="lg:col-span-2 space-y-4">
+                            <div class="lg:col-span-3 space-y-4">
                                 <div class="flex justify-between items-center mb-1">
                                     <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
-                                        ${state.activeTab === 'list' ? 'Hồ sơ đang xử lý' : 'Danh mục hồ sơ hoàn tất'}
+                                        ${state.activeTab === 'list' ? 'Hồ Sơ Đang Xử Lý' : 'Danh Mục Hồ Sơ Hoàn Tất'}
                                     </h2>
                                 </div>
                                 <div id="dossiers-list-container" class="space-y-4">
                                     ${renderDossiersList(visibleDossiersData)}
                                 </div>
-                            </div>
-                            <!-- Right Detail Panel -->
-                            <div class="lg:col-span-1" id="dossier-detail-container">
-                                ${renderDossierDetail()}
                             </div>
                         </div>
                     </div>
@@ -1062,35 +871,31 @@
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Tổng hồ sơ hiển thị</span>
-                                    <span class="text-indigo-500 text-lg">📁</span>
+                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Tổng hồ sơ hiển thị</span><span class="text-indigo-500 text-lg">📁</span>
                                 </div>
                                 <p class="text-3xl font-extrabold text-slate-900 mt-2">${visibleDossiersData.length}</p>
                             </div>
                             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Chưa hoàn thành</span>
-                                    <span class="text-amber-500 text-lg">⏳</span>
+                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Chưa hoàn thành</span><span class="text-amber-500 text-lg">⏳</span>
                                 </div>
-                                <p class="text-3xl font-extrabold text-slate-900 mt-2">${state.dossiers.filter(d => !d.isCompleted).length}</p>
+                                <p class="text-3xl font-extrabold text-slate-900 mt-2">${(state.dossiers || []).filter(d => !d.isCompleted).length}</p>
                             </div>
                             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Đã Lưu Lịch Sử</span>
-                                    <span class="text-emerald-500 text-lg">✓</span>
+                                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Đã Lưu Lịch Sử</span><span class="text-emerald-500 text-lg">✓</span>
                                 </div>
-                                <p class="text-3xl font-extrabold text-slate-900 mt-2">${state.dossiers.filter(d => d.isCompleted).length}</p>
+                                <p class="text-3xl font-extrabold text-slate-900 mt-2">${(state.dossiers || []).filter(d => d.isCompleted).length}</p>
                             </div>
                             <div class="bg-white p-5 rounded-xl border border-rose-200 bg-rose-50/20 shadow-sm">
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[10px] font-extrabold text-rose-700 uppercase tracking-wider">Quá hạn bồi hoàn B4</span>
-                                    <span class="text-rose-600 text-lg">🚨</span>
+                                    <span class="text-[10px] font-extrabold text-rose-700 uppercase tracking-wider">Quá hạn bồi hoàn B4</span><span class="text-rose-600 text-lg">🚨</span>
                                 </div>
                                 <p class="text-3xl font-extrabold text-rose-700 mt-2">${overdueList.length}</p>
                             </div>
                         </div>
 
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6 animate-fade-in">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
                             <div class="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
                                 <h3 class="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                                     <span class="text-rose-600">🚨</span> Báo cáo các hồ sơ quá hạn bồi hoàn chứng từ sau giải ngân
@@ -1103,21 +908,13 @@
                                     <table class="w-full text-xs text-left text-slate-600">
                                         <thead class="bg-slate-50 text-slate-700 uppercase font-extrabold text-[10px] tracking-wider">
                                             <tr>
-                                                <th class="py-3 px-4">Tên khách hàng</th>
-                                                <th class="py-3 px-4">Chứng từ nợ</th>
-                                                <th class="py-3 px-4 text-center">Hạn cam kết bồi hoàn</th>
-                                                <th class="py-3 px-4 text-center">Số ngày trễ</th>
-                                                <th class="py-3 px-4">Chuyên viên QHKH</th>
+                                                <th class="py-3 px-4">Tên khách hàng</th><th class="py-3 px-4">Chứng từ nợ</th><th class="py-3 px-4 text-center">Hạn cam kết bồi hoàn</th><th class="py-3 px-4 text-center">Số ngày trễ</th><th class="py-3 px-4">Chuyên viên QHKH</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-slate-100">
                                             ${overdueList.map(item => `
                                                 <tr class="hover:bg-rose-50/10">
-                                                    <td class="py-3 px-4 font-bold text-slate-800">${item.customerName}</td>
-                                                    <td class="py-3 px-4 font-semibold text-slate-700">${item.docName}</td>
-                                                    <td class="py-3 px-4 text-center font-bold text-slate-600">${item.commitmentDate}</td>
-                                                    <td class="py-3 px-4 text-center text-rose-600 font-extrabold">${item.daysOverdue} ngày</td>
-                                                    <td class="py-3 px-4 font-medium">${item.creatorName}</td>
+                                                    <td class="py-3 px-4 font-bold text-slate-800">${item.customerName}</td><td class="py-3 px-4 font-semibold text-slate-700">${item.docName}</td><td class="py-3 px-4 text-center font-bold text-slate-600">${item.commitmentDate}</td><td class="py-3 px-4 text-center text-rose-600 font-extrabold">${item.daysOverdue} ngày</td><td class="py-3 px-4 font-medium">${item.creatorName}</td>
                                                 </tr>
                                             `).join('')}
                                         </tbody>
@@ -1127,10 +924,10 @@
                         </div>
                     </div>
 
-                    <!-- TAB 4: QUẢN LÝ CÁN BỘ (ADMIN ONLY) -->
+                    <!-- TAB 4: QUẢN LÝ CÁN BỘ -->
                     <div id="tab-users" class="${state.activeTab === 'users' ? '' : 'hidden'} font-sans">
                         ${state.appUser.role === ROLES.ADMIN ? `
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm h-fit">
                                     <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider pb-3 border-b border-slate-100 mb-4">
                                         ${state.adminEditMode ? "📝 Cập nhật tài khoản cán bộ" : "👤 Thêm mới cán bộ vào hệ thống"}
@@ -1176,19 +973,13 @@
                                         <table class="w-full text-xs text-left text-slate-600">
                                             <thead class="bg-slate-50 text-slate-700 uppercase font-extrabold text-[10px]">
                                                 <tr>
-                                                    <th class="py-2.5 px-3">Username</th>
-                                                    <th class="py-2.5 px-3">Họ và Tên</th>
-                                                    <th class="py-2.5 px-3">Phòng Ban</th>
-                                                    <th class="py-2.5 px-3">Vai trò</th>
-                                                    <th class="py-2.5 px-3 text-right">Thao tác</th>
+                                                    <th class="py-2.5 px-3">Username</th><th class="py-2.5 px-3">Họ và Tên</th><th class="py-2.5 px-3">Phòng Ban</th><th class="py-2.5 px-3">Vai trò</th><th class="py-2.5 px-3 text-right">Thao tác</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="divide-y divide-slate-100">
                                                 ${state.usersList.map(u => `
                                                     <tr class="hover:bg-slate-50/50">
-                                                        <td class="py-3 px-3 font-mono font-bold text-slate-900">${u.username}</td>
-                                                        <td class="py-3 px-3 font-semibold text-slate-800">${u.name}</td>
-                                                        <td class="py-3 px-3 text-slate-500">${u.department}</td>
+                                                        <td class="py-3 px-3 font-mono font-bold text-slate-900">${u.username}</td><td class="py-3 px-3 font-semibold text-slate-800">${u.name}</td><td class="py-3 px-3 text-slate-500">${u.department}</td>
                                                         <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full font-bold text-[10px] uppercase">${u.role}</span></td>
                                                         <td class="py-3 px-3 text-right space-x-2">
                                                             <button onclick="openResetPasswordModal('${u.username}')" class="text-emerald-600 font-bold">Reset</button>
@@ -1205,16 +996,11 @@
                         ` : ''}
                     </div>
 
-                    <!-- TAB 5: HƯỚNG DẪN QUY TRÌNH -->
+                    <!-- TAB 5: HƯỚNG DẪN -->
                     <div id="tab-help" class="${state.activeTab === 'help' ? '' : 'hidden'} font-sans">
                         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                             <h2 class="text-lg font-extrabold text-slate-900 uppercase">Hướng dẫn kết nối máy chủ dữ liệu bảo mật</h2>
                             <p class="text-sm text-slate-600 leading-relaxed">Nếu Netlify hiển thị cảnh báo đỏ hoặc chuyển sang chế độ Offline, hãy dán đúng Quy tắc (Rules) bảo mật sau đây vào tab **Rules** của **Firestore Database** trên Firebase Console:</p>
-                            <ol class="list-decimal pl-5 space-y-2 text-xs text-slate-700">
-                                <li><strong>Bật Đăng nhập ẩn danh:</strong> Vào Authentication -> Sign-in method -> Bật "Anonymous" lên.</li>
-                                <li><strong>Bật cơ sở dữ liệu:</strong> Vào Firestore Database -> Nhấp nút "Create Database".</li>
-                                <li><strong>Cấu hình Rules (Quy tắc):</strong> Thay thế quy tắc mặc định bằng đoạn mã dưới đây và bấm Publish:</li>
-                            </ol>
                             <pre class="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto font-mono">
 rules_version = '2';
 service cloud.firestore {
@@ -1233,7 +1019,7 @@ service cloud.firestore {
                     <p>© 2026 Hệ thống giám sát luồng vận hành tín dụng. Ghi nhận thời gian thực Cloud.</p>
                 </footer>
 
-                <!-- MODALS (CỬA SỔ POP-UP CHI TIẾT & CHỨC NĂNG) -->
+                <!-- TẤT CẢ MODALS NẰM Ở ĐÂY -->
                 ${renderDossierDetailModal()}
                 ${renderCreateDossierModal()}
                 ${renderActionModal()}
@@ -1246,22 +1032,18 @@ service cloud.firestore {
             registerDOMEventListeners();
         }
 
-        // VẼ DANH SÁCH HỒ SƠ TÍN DỤNG RÚT GỌN (TÊN HỒ SƠ, CB KHỞI TẠO, NGÀY KHỞI TẠO)
+        // ==========================================
+        // CÁC HÀM VẼ GIAO DIỆN (RENDERERS)
+        // ==========================================
         function renderDossiersList(visibleDossiersData) {
             const list = filteredDossiers();
             if (list.length === 0) {
-                return `
-                    <div class="bg-white p-12 text-center rounded-xl border border-slate-200 font-sans">
-                        <p class="text-slate-400 text-sm">Không tìm thấy hồ sơ phù hợp.</p>
-                    </div>
-                `;
+                return `<div class="bg-white p-12 text-center rounded-xl border border-slate-200 font-sans"><p class="text-slate-400 text-sm">Không tìm thấy hồ sơ phù hợp.</p></div>`;
             }
-
             return list.map(dossier => {
                 const isSelected = state.selectedDossier && state.selectedDossier.id === dossier.id;
                 const isUrgent = dossier.priority === "URGENT";
                 const dateStr = new Date(dossier.createdAt).toLocaleDateString('vi-VN');
-
                 return `
                     <div onclick="selectDossier('${dossier.id}')" class="bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition-all hover:shadow-md hover:border-indigo-400 ${isSelected ? 'border-2 border-indigo-600 ring-4 ring-indigo-50' : 'border-slate-200'}">
                         <div class="flex justify-between items-center">
@@ -1273,8 +1055,7 @@ service cloud.firestore {
                                 <p class="text-xs text-slate-500 font-medium">Chuyên viên khởi tạo: <strong class="text-slate-700">${dossier.creatorName}</strong></p>
                             </div>
                             <div class="text-right text-xs text-slate-400 font-medium">
-                                <span class="block">Khởi tạo</span>
-                                <strong class="text-slate-700 font-mono">${dateStr}</strong>
+                                <span class="block">Khởi tạo</span><strong class="text-slate-700 font-mono">${dateStr}</strong>
                             </div>
                         </div>
                     </div>
@@ -1282,19 +1063,9 @@ service cloud.firestore {
             }).join('');
         }
 
-        // VẼ PHẦN PANEL CHI TIẾT TRÊN GIAO DIỆN CHÍNH (NẾU KHÔNG DÙNG MODAL HOẶC CÓ THỂ MỞ RỘNG)
-        function renderDossierDetail() {
-            // Panel bên phải rỗng để giữ thiết kế dạng master-detail trên bản Desktop nếu muốn, 
-            // Nhưng thiết kế gốc của bạn dùng Modal. Ở đây cứ để rỗng.
-            return ``;
-        }
-
-        // CỬA SỔ HIỆN LÊN CHI TIẾT HỒ SƠ (DETAIL POP-UP MODAL)
         function renderDossierDetailModal() {
             if (!state.selectedDossier) return '';
-            
-            const d = state.selectedDossier;
-            const activeStage = STAGES.find(s => s.id === d.currentStage);
+            const d = state.selectedDossier; const activeStage = STAGES.find(s => s.id === d.currentStage);
             const isLdkh = state.appUser.role === ROLES.LD_PKH;
             
             let canProcess = false;
@@ -1309,8 +1080,6 @@ service cloud.firestore {
             return `
                 <div class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-40 animate-fade-in font-sans" onclick="closeDossierDetail()">
                     <div class="bg-white rounded-2xl shadow-2xl border border-indigo-200 max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
-                        
-                        <!-- Header Pop-up -->
                         <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center border-b border-slate-800">
                             <div>
                                 <span class="text-[10px] text-slate-400 uppercase font-bold block">Chi Tiết Hồ Sơ Luân Chuyển</span>
@@ -1318,65 +1087,33 @@ service cloud.firestore {
                             </div>
                             <button onclick="closeDossierDetail()" class="text-slate-400 hover:text-white bg-slate-800 rounded-full h-8 w-8 flex items-center justify-center font-bold">✕</button>
                         </div>
-
-                        <!-- Body Pop-up (Có scroll tự động) -->
                         <div class="p-6 space-y-5 overflow-y-auto flex-grow text-xs">
-                            
-                            <!-- Summary Card -->
                             <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 font-semibold text-slate-700">
-                                <div>
-                                    <span class="text-slate-400 block font-normal text-[10px] uppercase">Loại luồng tín dụng:</span>
-                                    <strong class="text-slate-800 text-xs">${d.dossierType}</strong>
-                                </div>
-                                <div>
-                                    <span class="text-slate-400 block font-normal text-[10px] uppercase">Số tiền đề nghị:</span>
-                                    <strong class="text-indigo-700 text-sm font-extrabold">${formatVND(d.loanAmount)}</strong>
-                                </div>
-                                <div>
-                                    <span class="text-slate-400 block font-normal text-[10px] uppercase">CB QHKH phụ trách:</span>
-                                    <strong class="text-slate-800">💼 ${d.creatorName}</strong>
-                                </div>
-                                <div>
-                                    <span class="text-slate-400 block font-normal text-[10px] uppercase">LĐ P.KH đồng theo dõi:</span>
-                                    <strong class="text-indigo-600">👑 ${state.usersList.find(u => u.username === d.ldkhFollower)?.name || d.ldkhFollower}</strong>
-                                </div>
+                                <div><span class="text-slate-400 block font-normal text-[10px] uppercase">Loại luồng:</span><strong class="text-slate-800 text-xs">${d.dossierType}</strong></div>
+                                <div><span class="text-slate-400 block font-normal text-[10px] uppercase">Số tiền đề nghị:</span><strong class="text-indigo-700 text-sm font-extrabold">${formatVND(d.loanAmount)}</strong></div>
+                                <div><span class="text-slate-400 block font-normal text-[10px] uppercase">CB QHKH phụ trách:</span><strong class="text-slate-800">💼 ${d.creatorName}</strong></div>
+                                <div><span class="text-slate-400 block font-normal text-[10px] uppercase">LĐ P.KH đồng theo dõi:</span><strong class="text-indigo-600">👑 ${state.usersList.find(u => u.username === d.ldkhFollower)?.name || d.ldkhFollower}</strong></div>
                             </div>
 
-                            <!-- B4. QUẢN LÝ DANH MỤC XIN NỢ BỒI HOÀN CHỨNG TỪ (Chỉ hiển thị ở Bước 4) -->
                             ${d.currentStage === 4 && !d.isCompleted ? `
                                 <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 text-xs text-slate-800">
                                     <h3 class="text-xs font-extrabold text-amber-900 mb-2 uppercase tracking-wider">📋 B4. Danh sách xin nợ bồi hoàn sau giải ngân</h3>
-                                    
                                     ${state.appUser.role === ROLES.CB_QHKH ? `
                                         <div class="space-y-3">
                                             <label class="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
                                                 <input type="checkbox" id="is-debting-checkbox" class="w-4 h-4 text-indigo-600 border-slate-300 rounded" ${d.isDebting ? 'checked' : ''}>
                                                 Xin nợ bồi hoàn hồ sơ sau giải ngân
                                             </label>
-
                                             <div id="remedy-input-section" class="${d.isDebting ? '' : 'hidden'} pt-2 border-t border-amber-200 space-y-3">
                                                 <form id="debt-add-form" class="space-y-2">
-                                                    <div>
-                                                        <label class="block text-[10px] uppercase text-slate-500 font-bold mb-0.5">Tên chứng từ nợ *</label>
-                                                        <input id="new-debt-name" type="text" placeholder="Ví dụ: Giấy phép xây dựng, tờ khai..." class="w-full p-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none">
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-[10px] uppercase text-slate-500 font-bold mb-0.5">Hạn cam kết bồi hoàn *</label>
-                                                        <input id="new-debt-date" type="date" class="w-full p-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none">
-                                                    </div>
+                                                    <div><label class="block text-[10px] uppercase text-slate-500 font-bold mb-0.5">Tên chứng từ nợ *</label><input id="new-debt-name" type="text" placeholder="Ví dụ: Giấy phép xây dựng..." class="w-full p-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none"></div>
+                                                    <div><label class="block text-[10px] uppercase text-slate-500 font-bold mb-0.5">Hạn cam kết bồi hoàn *</label><input id="new-debt-date" type="date" class="w-full p-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none"></div>
                                                     <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-3 rounded-lg transition-colors text-[11px]">Đăng ký nợ chứng từ</button>
                                                 </form>
                                             </div>
                                         </div>
-                                    ` : `
-                                        <div class="mb-2">
-                                            <span class="inline-block font-bold mt-1 px-2 py-0.5 rounded text-[10px] ${d.isDebting ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}">
-                                                ${d.isDebting ? '⚠️ ĐANG XIN NỢ BỒI HOÀN CHỨNG TỪ' : 'Không nợ bồi hoàn'}
-                                            </span>
-                                        </div>
-                                    `}
-
-                                    <!-- List of Debts -->
+                                    ` : `<div class="mb-2"><span class="inline-block font-bold mt-1 px-2 py-0.5 rounded text-[10px] ${d.isDebting ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}">${d.isDebting ? '⚠️ ĐANG XIN NỢ BỒI HOÀN' : 'Không nợ bồi hoàn'}</span></div>`}
+                                    
                                     ${d.debts && d.debts.length > 0 ? `
                                         <div class="mt-4 pt-3 border-t border-amber-200">
                                             <div class="space-y-2 max-h-48 overflow-y-auto">
@@ -1391,7 +1128,7 @@ service cloud.firestore {
                                                             </div>
                                                             <div class="flex justify-between items-center text-[10px] text-slate-500 mt-1">
                                                                 <span>Cam kết: <strong class="${isOverdue ? 'text-rose-600 font-bold' : 'text-slate-700'}">${debt.commitmentDate}</strong></span>
-                                                                <button ${!isHttd ? 'disabled title="Chỉ CB HTTD được quyền cập nhật bồi hoàn"' : ''} onclick="handleToggleDebtStatus('${debt.id}')" class="px-2 py-0.5 rounded text-[9px] font-bold ${!isHttd ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'} ${debt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800 hover:bg-emerald-50'}">
+                                                                <button ${!isHttd ? 'disabled title="Chỉ CB HTTD"' : ''} onclick="handleToggleDebtStatus('${debt.id}')" class="px-2 py-0.5 rounded text-[9px] font-bold ${!isHttd ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'} ${debt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800 hover:bg-emerald-50'}">
                                                                     ${debt.status === 'COMPLETED' ? '✓ Đã bồi hoàn' : '⏳ Chưa bồi hoàn'}
                                                                 </button>
                                                             </div>
@@ -1405,75 +1142,54 @@ service cloud.firestore {
                                 </div>
                             ` : ''}
 
-                            <!-- ACTIONS PANEL -->
                             ${!d.isCompleted ? `
                                 <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
                                     <h3 class="text-xs font-extrabold text-indigo-900 mb-2 uppercase tracking-wider flex items-center gap-1.5">⚡ Hành động nghiệp vụ</h3>
-                                    
                                     ${isLdkh ? `
-                                        <div class="bg-blue-100/80 p-3 rounded-lg border border-blue-200 text-[11px] text-blue-800 font-semibold leading-relaxed">
-                                            👁️ Bạn đang xem hồ sơ này với vai trò LĐ P.KH đồng theo dõi (View-Only). Bạn không có quyền phê duyệt hoặc luân chuyển bước.
-                                        </div>
+                                        <div class="bg-blue-100/80 p-3 rounded-lg border border-blue-200 text-[11px] text-blue-800 font-semibold leading-relaxed">👁️ Bạn đang xem hồ sơ này với vai trò View-Only. Không có quyền luân chuyển.</div>
                                     ` : !canProcess ? `
-                                        <div class="bg-amber-100/80 p-3 rounded-lg border border-amber-200 text-[11px] text-amber-800 leading-relaxed font-semibold">
-                                            ⚠️ Bước hiện tại thuộc quyền hạn của bộ phận <strong>${activeStage?.actorRole}</strong>. Tài khoản của bạn không được phân quyền xử lý.
-                                        </div>
+                                        <div class="bg-amber-100/80 p-3 rounded-lg border border-amber-200 text-[11px] text-amber-800 leading-relaxed font-semibold">⚠️ Bước hiện tại thuộc quyền hạn của bộ phận <strong>${activeStage?.actorRole}</strong>. Bạn không có quyền xử lý.</div>
                                     ` : `
                                         <div class="space-y-3">
                                             <p class="text-xs text-slate-700 leading-relaxed">Hãy xử lý và chuyển bước luân chuyển hồ sơ.</p>
-                                            
                                             ${d.currentStage !== 4 ? `
                                                 <div>
                                                     <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Ý kiến kiểm soát / phê duyệt:</label>
-                                                    <textarea id="action-comment-input" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" rows="2" placeholder="Nhập ý kiến xử lý (Không nhập được hiểu là không có ý kiến)..."></textarea>
+                                                    <textarea id="action-comment-input" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" rows="2" placeholder="Nhập ý kiến xử lý..."></textarea>
                                                 </div>
-
-                                                <!-- PHẦN UP ẢNH ĐÍNH KÈM Ý KIẾN (CB HTTD B2 & LĐ HTTD B3) -->
                                                 ${state.appUser.role === ROLES.CB_HTTD || state.appUser.role === ROLES.LD_PHTTD || state.appUser.role === ROLES.ADMIN ? `
                                                     <div class="bg-white p-3 rounded-lg border border-slate-200">
-                                                        <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">📸 Đính kèm ảnh ý kiến bổ sung nhanh (Up ảnh):</label>
+                                                        <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">📸 Đính kèm ảnh ý kiến (Up ảnh):</label>
                                                         <div class="flex items-center gap-2">
                                                             <input type="file" id="image-upload-input" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
-                                                            <button type="button" onclick="document.getElementById('image-upload-input').click()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 py-1 px-2.5 rounded font-bold text-[11px]">Chọn ảnh từ thiết bị</button>
+                                                            <button type="button" onclick="document.getElementById('image-upload-input').click()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 py-1 px-2.5 rounded font-bold text-[11px]">Chọn ảnh</button>
                                                         </div>
                                                         <div id="image-upload-preview" class="mt-2"></div>
                                                     </div>
                                                 ` : ''}
                                             ` : ''}
-
                                             <div class="flex flex-col gap-1.5 pt-1">
-                                                ${d.currentStage < 4 ? `
-                                                    <button onclick="openActionModal('NEXT')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold transition-all shadow-sm">
-                                                        ${d.currentStage === 3 ? "👉 Phê duyệt tối cao & Chuyển luồng thông minh" : "👉 Phê duyệt & Chuyển giao"}
-                                                    </button>
-                                                ` : ''}
-
-                                                <!-- NÚT HOÀN TẤT BỒI HOÀN TRỰC QUAN CHO CB HTTD TẠI B4 -->
-                                                ${d.currentStage === 4 ? `
-                                                    <button ${!canCompleteB4 ? 'disabled' : ''} onclick="openActionModal('COMPLETE')" class="w-full py-2 px-4 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all flex items-center justify-center gap-2">
-                                                        ✅ Hoàn tất bồi hoàn hồ sơ & Lưu trữ lịch sử
-                                                    </button>
-                                                ` : ''}
-
-                                                ${d.currentStage > 1 && d.currentStage < 4 ? `
-                                                    <button onclick="openActionModal('RETURN')" class="w-full bg-rose-500 hover:bg-rose-600 text-white py-1.5 px-3 rounded-lg text-xs font-bold transition-all shadow-sm">↩️ Trả về bước trước (Yêu cầu làm lại)</button>
-                                                ` : ''}
+                                                ${d.currentStage < 4 ? `<button onclick="openActionModal('NEXT')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold transition-all shadow-sm">${d.currentStage === 3 ? "👉 Phê duyệt tối cao & Chuyển luồng" : "👉 Phê duyệt & Chuyển giao"}</button>` : ''}
+                                                ${d.currentStage === 4 ? `<button ${!canCompleteB4 ? 'disabled' : ''} onclick="openActionModal('COMPLETE')" class="w-full py-2 px-4 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all flex items-center justify-center gap-2">✅ Hoàn tất bồi hoàn hồ sơ & Lưu trữ lịch sử</button>` : ''}
+                                                ${d.currentStage > 1 && d.currentStage < 4 ? `<button onclick="openActionModal('RETURN')" class="w-full bg-rose-500 hover:bg-rose-600 text-white py-1.5 px-3 rounded-lg text-xs font-bold transition-all shadow-sm">↩️ Trả về bước trước (Yêu cầu làm lại)</button>` : ''}
                                             </div>
                                         </div>
                                     `}
                                 </div>
                             ` : `
-                                <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 mb-5 text-xs font-bold text-center">
-                                    🎉 HỒ SƠ ĐÃ HOÀN TẤT & LƯU LỊCH SỬ THÀNH CÔNG
-                                </div>
+                                <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 mb-5 text-xs font-bold text-center">🎉 HỒ SƠ ĐÃ HOÀN TẤT & LƯU LỊCH SỬ THÀNH CÔNG</div>
                             `}
 
-                            <!-- TIMELINE HISTORICAL COMPONENT -->
                             <div class="pt-4 border-t border-slate-100">
                                 <h3 class="text-xs font-extrabold text-slate-800 mb-4 pb-2 border-b border-slate-100 uppercase tracking-wider">🕒 Nhật Ký Luân Chuyển Thời Gian</h3>
                                 <div class="relative border-l-2 border-slate-200 pl-4 space-y-4 max-h-60 overflow-y-auto">
                                     ${d.history.map(log => {
                                         const isActive = log.endTime === null;
+                                        function formatDateTimeLog(dateISOStr) {
+                                            if (!dateISOStr) return "---";
+                                            const date = new Date(dateISOStr);
+                                            return `${date.toLocaleTimeString('vi-VN')} ngày ${date.toLocaleDateString('vi-VN')}`;
+                                        }
                                         return `
                                             <div class="relative text-xs">
                                                 <span class="absolute -left-[23px] top-1 h-2.5 w-2.5 rounded-full ${isActive ? 'bg-indigo-600 animate-pulse ring-4 ring-indigo-100' : 'bg-emerald-500'}"></span>
@@ -1483,49 +1199,32 @@ service cloud.firestore {
                                                     ${isActive ? `<span class="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded-full animate-pulse">⚡ Đang xử lý</span>` : ''}
                                                 </div>
                                                 <div class="text-slate-500 mt-0.5 flex flex-wrap gap-1 text-[10px]">
-                                                    <span>Nhân sự: <strong class="text-slate-700">${log.actor}</strong></span>
-                                                    <span>•</span>
+                                                    <span>Nhân sự: <strong class="text-slate-700">${log.actor}</strong></span><span>•</span>
                                                     <span>Trạng thái: <strong class="text-indigo-600">${log.action}</strong></span>
                                                 </div>
-                                                <p class="mt-1 text-[10px] bg-slate-50 p-2 rounded-lg border-l-2 border-indigo-400 italic text-slate-600">
-                                                    "${log.comment || 'Không có ý kiến'}"
-                                                </p>
+                                                <p class="mt-1 text-[10px] bg-slate-50 p-2 rounded-lg border-l-2 border-indigo-400 italic text-slate-600">"${log.comment || 'Không có ý kiến'}"</p>
                                                 ${log.attachedImage ? `
                                                     <div class="mt-2 relative inline-block group">
                                                         <img src="${log.attachedImage}" onclick="zoomImage('${log.attachedImage}')" class="h-20 w-32 object-cover rounded-lg border border-slate-300 shadow cursor-pointer hover:opacity-85 transition-opacity">
                                                         <span class="absolute bottom-1 right-1 bg-black/60 text-white text-[8px] px-1 rounded">🔍 Bấm để xem lớn</span>
                                                     </div>
                                                 ` : ''}
-                                                <div class="mt-1 text-[9px] text-slate-400 font-mono">
-                                                    Nhận: ${formatDateTimeLog(log.startTime)} 
-                                                    ${log.endTime ? ` | Bàn giao: ${formatDateTimeLog(log.endTime)}` : ''}
-                                                </div>
+                                                <div class="mt-1 text-[9px] text-slate-400 font-mono">Nhận: ${formatDateTimeLog(log.startTime)} ${log.endTime ? ` | Bàn giao: ${formatDateTimeLog(log.endTime)}` : ''}</div>
                                             </div>
                                         `;
                                     }).join('')}
                                 </div>
                             </div>
-
-                            <!-- CHỨC NĂNG ADMIN XÓA HỒ SƠ Ở TAB LỊCH SỬ -->
+                            
                             ${(state.appUser.role === ROLES.ADMIN && d.isCompleted) ? `
                                 <div class="pt-4 border-t border-slate-100">
-                                    <button onclick="handleDeleteHistoryDossier('${d.id}')" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 px-4 rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2">
-                                        🗑️ Admin: Xóa hồ sơ này vĩnh viễn khỏi hệ thống
-                                    </button>
+                                    <button onclick="handleDeleteHistoryDossier('${d.id}')" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 px-4 rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2">🗑️ Admin: Xóa hồ sơ này vĩnh viễn khỏi hệ thống</button>
                                 </div>
                             ` : ''}
-
                         </div>
                     </div>
                 </div>
             `;
-        }
-
-        // Định dạng ngày hiển thị timeline
-        function formatDateTimeLog(dateISOStr) {
-            if (!dateISOStr) return "---";
-            const date = new Date(dateISOStr);
-            return `${date.toLocaleTimeString('vi-VN')} ngày ${date.toLocaleDateString('vi-VN')}`;
         }
 
         function renderCreateDossierModal() {
@@ -1538,43 +1237,19 @@ service cloud.firestore {
                             <button onclick="closeCreateModal()" class="text-white/80 hover:text-white text-lg">✕</button>
                         </div>
                         <form id="create-dossier-form" class="p-5 space-y-4 text-xs">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Tên khách hàng doanh nghiệp / cá thể *</label>
-                                <input id="create-cust-name" type="text" required placeholder="Ví dụ: Công ty TNHH Đầu Tư Xây Dựng Long Biên" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none">
-                            </div>
+                            <div><label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Tên khách hàng doanh nghiệp / cá thể *</label><input id="create-cust-name" type="text" required placeholder="Ví dụ: Công ty TNHH MTV..." class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none"></div>
                             <div class="grid grid-cols-3 gap-4">
-                                <div class="col-span-1">
-                                    <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Số tiền (VNĐ) *</label>
-                                    <input id="create-loan-amount" type="number" required placeholder="Ví dụ: 3000000000" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none">
-                                </div>
-                                <div class="col-span-1">
-                                    <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Loại hình tín dụng *</label>
-                                    <select id="create-dossier-type" class="w-full p-2.5 border border-slate-300 rounded-lg font-semibold text-slate-700 focus:outline-none">
-                                        <option value="HS GHTD">HS GHTD</option>
-                                        <option value="HS từng lần">HS từng lần</option>
-                                        <option value="Hồ sơ khác">Hồ sơ khác</option>
-                                    </select>
-                                </div>
-                                <div class="col-span-1">
-                                    <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Mức độ ưu tiên *</label>
-                                    <select id="create-priority" class="w-full p-2.5 border border-slate-300 rounded-lg font-bold text-slate-700 focus:outline-none">
-                                        <option value="NORMAL">Thường</option>
-                                        <option value="URGENT">⚠️ Ưu tiên khẩn cấp</option>
-                                    </select>
-                                </div>
+                                <div class="col-span-1"><label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Số tiền (VNĐ) *</label><input id="create-loan-amount" type="number" required placeholder="3000000000" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none"></div>
+                                <div class="col-span-1"><label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Loại hình tín dụng *</label><select id="create-dossier-type" class="w-full p-2.5 border border-slate-300 rounded-lg font-semibold text-slate-700 focus:outline-none"><option value="HS GHTD">HS GHTD</option><option value="HS từng lần">HS từng lần</option><option value="Hồ sơ khác">Hồ sơ khác</option></select></div>
+                                <div class="col-span-1"><label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Mức độ ưu tiên *</label><select id="create-priority" class="w-full p-2.5 border border-slate-300 rounded-lg font-bold text-slate-700 focus:outline-none"><option value="NORMAL">Thường</option><option value="URGENT">⚠️ Ưu tiên khẩn cấp</option></select></div>
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">LĐ P.KH cùng theo dõi (View-Only) *</label>
                                 <select id="create-ldkh-follower" required class="w-full p-2.5 border border-slate-300 rounded-lg font-bold text-indigo-700 bg-indigo-50/50">
-                                    ${state.usersList.filter(u => u.role === ROLES.LD_PKH).map(leader => `
-                                        <option value="${leader.username}">👑 ${leader.name} (${leader.department})</option>
-                                    `).join('')}
+                                    ${state.usersList.filter(u => u.role === ROLES.LD_PKH).map(leader => `<option value="${leader.username}">👑 ${leader.name} (${leader.department})</option>`).join('')}
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Ý kiến khởi tạo / Ghi chú ban đầu</label>
-                                <textarea id="create-comment" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none" rows="3" placeholder="Nhập mô tả sơ bộ..."></textarea>
-                            </div>
+                            <div><label class="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Ý kiến khởi tạo / Ghi chú ban đầu</label><textarea id="create-comment" class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none" rows="3" placeholder="Nhập mô tả sơ bộ..."></textarea></div>
                             <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
                                 <button type="button" onclick="closeCreateModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">Hủy</button>
                                 <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors shadow-md">Gửi hồ sơ lên luồng</button>
@@ -1617,22 +1292,12 @@ service cloud.firestore {
                 <div class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 animate-fade-in font-sans">
                     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden">
                         <div class="bg-gradient-to-r from-slate-900 to-indigo-950 px-5 py-4 text-white flex justify-between items-center">
-                            <h3 class="font-extrabold text-sm uppercase tracking-wider">🔒 Đổi mật khẩu cá nhân</h3>
-                            <button onclick="closeChangePasswordModal()" class="text-white/80 hover:text-white">✕</button>
+                            <h3 class="font-extrabold text-sm uppercase tracking-wider">🔒 Đổi mật khẩu cá nhân</h3><button onclick="closeChangePasswordModal()" class="text-white/80 hover:text-white">✕</button>
                         </div>
                         <form id="change-password-form" class="p-5 space-y-4 text-xs">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Mật khẩu hiện tại *</label>
-                                <input id="pw-current" type="password" required class="w-full p-2.5 border border-slate-300 rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Mật khẩu mới *</label>
-                                <input id="pw-new" type="password" required placeholder="Tối thiểu 3 ký tự..." class="w-full p-2.5 border border-slate-300 rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Xác nhận mật khẩu mới *</label>
-                                <input id="pw-confirm" type="password" required class="w-full p-2.5 border border-slate-300 rounded-lg">
-                            </div>
+                            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Mật khẩu hiện tại *</label><input id="pw-current" type="password" required class="w-full p-2.5 border border-slate-300 rounded-lg"></div>
+                            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Mật khẩu mới *</label><input id="pw-new" type="password" required placeholder="Tối thiểu 3 ký tự..." class="w-full p-2.5 border border-slate-300 rounded-lg"></div>
+                            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Xác nhận mật khẩu mới *</label><input id="pw-confirm" type="password" required class="w-full p-2.5 border border-slate-300 rounded-lg"></div>
                             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 font-sans">
                                 <button type="button" onclick="closeChangePasswordModal()" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Hủy</button>
                                 <button type="submit" class="px-4 py-1.5 bg-indigo-600 text-white font-bold rounded-lg text-xs shadow-md">Xác nhận</button>
@@ -1649,17 +1314,11 @@ service cloud.firestore {
                 <div class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 animate-fade-in font-sans">
                     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden">
                         <div class="bg-gradient-to-r from-slate-900 to-indigo-950 px-5 py-4 text-white flex justify-between items-center">
-                            <h3 class="font-extrabold text-sm uppercase tracking-wider">🔑 Reset mật khẩu cán bộ</h3>
-                            <button onclick="closeResetPasswordModal()" class="text-white/80 hover:text-white">✕</button>
+                            <h3 class="font-extrabold text-sm uppercase tracking-wider">🔑 Reset mật khẩu cán bộ</h3><button onclick="closeResetPasswordModal()" class="text-white/80 hover:text-white">✕</button>
                         </div>
                         <form id="admin-reset-password-form" class="p-5 space-y-4 text-xs">
-                            <div>
-                                <p class="text-slate-600 font-semibold font-sans">Tài khoản cán bộ: <span class="text-indigo-600 font-bold font-mono">${state.resetTargetUsername}</span></p>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Mật khẩu mới thay thế *</label>
-                                <input id="admin-new-reset-password" type="text" required placeholder="Nhập mật khẩu..." class="w-full p-2.5 border border-slate-300 rounded-lg font-semibold">
-                            </div>
+                            <div><p class="text-slate-600 font-semibold font-sans">Tài khoản cán bộ: <span class="text-indigo-600 font-bold font-mono">${state.resetTargetUsername}</span></p></div>
+                            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Mật khẩu mới thay thế *</label><input id="admin-new-reset-password" type="text" required placeholder="Nhập mật khẩu..." class="w-full p-2.5 border border-slate-300 rounded-lg font-semibold"></div>
                             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 font-sans">
                                 <button type="button" onclick="closeResetPasswordModal()" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Hủy</button>
                                 <button type="submit" class="px-4 py-1.5 bg-emerald-600 text-white font-bold rounded-lg text-xs shadow-md">Xác Nhận</button>
@@ -1675,9 +1334,7 @@ service cloud.firestore {
             return `
                 <div class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-[60] animate-fade-in font-sans">
                     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden">
-                        <div class="bg-slate-100 px-5 py-3 border-b border-slate-200">
-                            <h4 class="font-extrabold text-xs uppercase tracking-wider text-slate-800">${state.confirmTitle}</h4>
-                        </div>
+                        <div class="bg-slate-100 px-5 py-3 border-b border-slate-200"><h4 class="font-extrabold text-xs uppercase tracking-wider text-slate-800">${state.confirmTitle}</h4></div>
                         <div class="p-5 space-y-4 text-xs">
                             <p class="text-slate-600">${state.confirmMessage}</p>
                             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 font-sans">
@@ -1702,25 +1359,12 @@ service cloud.firestore {
             `;
         }
 
-        // ==========================================
-        // CÁC SỰ KIỆN GIAO DIỆN (DOM EVENT LISTENERS)
-        // ==========================================
         function registerDOMEventListeners() {
             const searchInput = document.getElementById("search-input");
-            if (searchInput) {
-                searchInput.addEventListener("input", (e) => {
-                    state.searchTerm = e.target.value;
-                    renderDossiersListContainerOnly();
-                });
-            }
+            if (searchInput) searchInput.addEventListener("input", (e) => { state.searchTerm = e.target.value; renderDossiersListContainerOnly(); });
 
             const stageSelect = document.getElementById("filter-stage-select");
-            if (stageSelect) {
-                stageSelect.addEventListener("change", (e) => {
-                    state.filterStage = e.target.value;
-                    renderDossiersListContainerOnly();
-                });
-            }
+            if (stageSelect) stageSelect.addEventListener("change", (e) => { state.filterStage = e.target.value; renderDossiersListContainerOnly(); });
 
             const adminUserForm = document.getElementById("admin-user-form");
             if (adminUserForm) adminUserForm.addEventListener("submit", window.handleAdminSaveUser);
@@ -1746,33 +1390,6 @@ service cloud.firestore {
             if (container) container.innerHTML = renderDossiersList(getVisibleDossiers());
         }
 
-        function filteredDossiers() {
-            const visible = getVisibleDossiers();
-            return visible.filter(d => {
-                const matchSearch = d.customerName.toLowerCase().includes(state.searchTerm.toLowerCase()) || 
-                                    (d.id && d.id.toLowerCase().includes(state.searchTerm.toLowerCase())) ||
-                                    d.dossierType.toLowerCase().includes(state.searchTerm.toLowerCase());
-                
-                const matchStage = (state.activeTab === "list" && state.filterStage !== "ALL") 
-                    ? d.currentStage === parseInt(state.filterStage) 
-                    : true;
-                return matchSearch && matchStage;
-            });
-        }
-
-        // ==========================================
-        // WINDOW ACTIONS & BOOTSTRAP
-        // ==========================================
-        let totalCount = 0;
-
-        function recalculateSummaryMetrics() {
-            const visible = getVisibleDossiers();
-            totalCount = visible.length;
-        }
-
-        window.onload = async () => {
-            bootstrap();
-        };
     </script>
 </body>
 </html>
